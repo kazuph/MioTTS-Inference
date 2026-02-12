@@ -1,0 +1,72 @@
+services:
+  vllm:
+    image: vllm/vllm-openai:latest
+    command:
+      - --model
+      - Aratako/MioTTS-1.2B
+      - --max-model-len
+      - "1024"
+      - --gpu-memory-utilization
+      - "0.3"
+      - --dtype
+      - bfloat16
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 60s
+
+  miotts-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    depends_on:
+      vllm:
+        condition: service_healthy
+    environment:
+      - MIOTTS_LLM_BASE_URL=http://vllm:8000/v1
+      - MIOTTS_DEVICE=cuda
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8001/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
+
+  miotts-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["uv", "run", "python", "run_gradio.py"]
+    ports:
+      - "7860:7860"
+    depends_on:
+      miotts-api:
+        condition: service_healthy
+    environment:
+      - MIOTTS_API_BASE=http://miotts-api:8001
+      - GRADIO_SERVER_NAME=0.0.0.0
+
+volumes:
+  hf_cache:
