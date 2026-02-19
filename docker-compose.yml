@@ -56,6 +56,35 @@ services:
       retries: 60
       start_period: 30s
 
+  stt-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    command: ["uv", "run", "python", "stt_server.py"]
+    ports:
+      - "8002:8002"
+    depends_on:
+      miotts-api:
+        condition: service_healthy
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8002/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 120s
+
   miotts-web:
     build:
       context: .

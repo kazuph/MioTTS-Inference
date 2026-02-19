@@ -19,10 +19,11 @@ COPY pyproject.toml uv.lock ./
 COPY miotts_server/ miotts_server/
 COPY presets/ presets/
 COPY scripts/ scripts/
-COPY run_server.py run_gradio.py LICENSE README.md ./
+COPY run_server.py run_gradio.py stt_server.py LICENSE README.md ./
 
-# Install Python 3.12 and all dependencies (uv.lock already specifies cu128 torch for Linux)
-RUN uv python install 3.12 && uv sync --python 3.12
+# Install Python 3.12 and all dependencies
+# Then add stt_server extras: google-genai + faster-whisper
+RUN uv python install 3.12 && uv sync --python 3.12 && uv pip install google-genai faster-whisper
 
 EXPOSE 8001
 
