@@ -1,6 +1,7 @@
 services:
   vllm:
     image: vllm/vllm-openai:latest
+    restart: always
     command:
       - --model
       - Aratako/MioTTS-1.2B
@@ -30,6 +31,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    restart: always
     ports:
       - "8001:8001"
     depends_on:
@@ -58,6 +60,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    restart: always
     command: ["uv", "run", "python", "run_gradio.py"]
     ports:
       - "7860:7860"
